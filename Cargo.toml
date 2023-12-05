@@ -1,0 +1,28 @@
+[package]
+name = "arp_scan_rust"
+version = "0.1.0"
+edition = "2021"
+authors = ["Chrom"]
+description = "A tool to scan for devices on a local network using ARP"
+license = "MIT"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+# Project support tools
+cargo-check-external-types = "0.1.10"
+cargo-semver-checks = "0.25.0"
+
+# CLI tools
+clap = { version = "4.4.11", features = ["derive"] }
+termcolor = "1.4.0"
+
+# OS support
+nix = "0.26.4"
+os-version = "0.2.0"
+
+# Networking
+interfaces = "0.0.9"
+ipnetwork = "0.20.0"
+pnet = "0.34.0"
+
