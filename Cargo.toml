@@ -26,3 +26,8 @@ interfaces = "0.0.9"
 ipnetwork = "0.20.0"
 pnet = "0.34.0"
 
+# Testing
+[dev-dependencies]
+mockall = "0.12.0"
+quickcheck_macros = "1.0.0"
+quickcheck = "1.0.3"
