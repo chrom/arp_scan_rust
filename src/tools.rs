@@ -4,7 +4,7 @@ use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub fn check_supported_os() -> Result<(), String> {
-    return match os_version::detect() {
+    match os_version::detect() {
         Ok(os) => {
             match os {
                 os_version::OsVersion::Linux(_) => Ok(()),
@@ -12,7 +12,7 @@ pub fn check_supported_os() -> Result<(), String> {
             }
         },
         Err(e) => Err(format!("Failed to detect OS version: {}", e)),
-    };
+    }
 }
 
 /// Prints an error message to stderr
@@ -34,7 +34,7 @@ pub fn print_formatted_std_error(error: String, color: Option<Color>) {
     stderr
         .set_color(ColorSpec::new().set_fg(Some(color.unwrap_or(Color::Red))))
         .unwrap();
-    (&mut stderr).write_fmt(format_args!("{0}\n", error)).unwrap();
+    stderr.write_fmt(format_args!("{0}\n", error)).unwrap();
     stderr.reset().unwrap();
 }
 
@@ -59,7 +59,7 @@ pub fn print_formatted_std_output(msg: String, color: Option<Color>) {
     stdout
         .set_color(ColorSpec::new().set_fg(Some(color.unwrap_or(Color::Green))))
         .unwrap();
-    (&mut stdout).write_fmt(format_args!("{0}\n", msg)).unwrap();
+    stdout.write_fmt(format_args!("{0}\n", msg)).unwrap();
     stdout.reset().unwrap();
     let _ = io::stdout().flush();
 }

@@ -101,7 +101,7 @@
     }
 
     fn get_flags(interface: &NetworkInterface) -> Result<String, String> {
-        const FLAGS: [&'static str; 8] = [
+        const FLAGS: [&str; 8] = [
             "UP",
             "BROADCAST",
             "LOOPBACK",
