@@ -4,16 +4,40 @@ use ipnetwork::Ipv4Network;
 
 use pnet::datalink::{Channel, DataLinkReceiver, MacAddr, NetworkInterface};
 use pnet::packet::arp::{ArpHardwareTypes, ArpOperations, ArpPacket, MutableArpPacket};
-use pnet::packet::ethernet::{EthernetPacket, EtherTypes, MutableEthernetPacket};
+use pnet::packet::ethernet::{EtherTypes, EthernetPacket, MutableEthernetPacket};
 use pnet::packet::{MutablePacket, Packet};
 
-pub fn get_available_interfaces<'a>(
-    all_interfaces: &'a Vec<NetworkInterface>,
-) -> Vec<&'a NetworkInterface> {
+/// Returns a vector of references to available network interfaces.
+///
+/// This function takes a reference to a vector of `NetworkInterface` instances and
+/// filters out interfaces that are not up, are loopback, or do not have any IPv4 addresses.
+/// The remaining interfaces are collected into a new vector and returned.
+///
+/// # Parameters
+///
+/// - `all_interfaces`: A reference to a vector of `NetworkInterface` instances.
+///
+/// # Returns
+///
+/// A vector of references to available network interfaces.
+///
+/// # Examples
+///
+/// ```
+/// use your_network_crate::{NetworkInterface, IpAddress};
+/// use your_crate_name::get_available_interfaces;
+///
+/// // Assuming you have a vector of NetworkInterface instances named 'all_interfaces'
+/// let available_interfaces = get_available_interfaces(&all_interfaces);
+/// for interface in available_interfaces {
+///     println!("Available Interface: {}", interface.name);
+/// }
+/// ```
+pub fn get_available_interfaces(all_interfaces: &Vec<NetworkInterface>) -> Vec<&NetworkInterface> {
     all_interfaces
-        .into_iter()
+        .iter()
         .filter(|interface| interface.is_up() && !interface.is_loopback())
-        .filter(|interface| interface.ips.iter().find(|ip| ip.is_ipv4()).is_some())
+        .filter(|interface| interface.ips.iter().any(|ip| ip.is_ipv4()))
         .collect()
 }
 
@@ -28,7 +52,7 @@ pub fn arp_scan(interface: &NetworkInterface, _target_ip: Ipv4Network) {
         })
         .unwrap();
 
-    let (mut sender, mut receiver) = match pnet::datalink::channel(&interface, Default::default()) {
+    let (mut sender, mut receiver) = match pnet::datalink::channel(interface, Default::default()) {
         Ok(Channel::Ethernet(tx, rx)) => (tx, rx),
         Ok(_) => panic!("Unknown channel type"),
         Err(e) => panic!("Error happened {}", e),
@@ -36,7 +60,7 @@ pub fn arp_scan(interface: &NetworkInterface, _target_ip: Ipv4Network) {
 
     let ethernet_packet = build_arp_packet(interface, source_ip);
     sender.send_to(ethernet_packet.packet(), None);
-    receive_arp_responses(&mut receiver, &interface);
+    receive_arp_responses(&mut receiver, interface);
 }
 
 fn receive_arp_responses(receiver: &mut Box<dyn DataLinkReceiver>, interface: &NetworkInterface) {
@@ -85,6 +109,3 @@ fn build_arp_packet(interface: &NetworkInterface, source_ip: Ipv4Addr) -> Mutabl
     ethernet_packet.set_payload(arp_packet.packet_mut());
     ethernet_packet
 }
-
-
-

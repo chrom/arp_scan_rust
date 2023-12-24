@@ -2,7 +2,7 @@
 name = "arp_scan_rust"
 version = "0.1.0"
 edition = "2021"
-authors = ["Chrom"]
+authors = ["Andrew <dr.chrom@gmai.com>"]
 description = "A tool to scan for devices on a local network using ARP"
 license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

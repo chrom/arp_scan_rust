@@ -1,6 +1,6 @@
-mod tools;
-mod net;
 mod cli;
+mod net;
+mod tools;
 
 mod view {
     pub mod row;
@@ -13,7 +13,7 @@ use nix::unistd::Uid;
 
 use pnet::datalink;
 
-use termcolor::{Color};
+use termcolor::Color;
 
 use tools::{check_supported_os, print_formatted_std_error};
 
@@ -51,4 +51,3 @@ fn main() {
     });
     net::arp_scan(interfaces[index_interface], target_ip);
 }
-
