@@ -26,12 +26,11 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 ///     show_list_interfaces(&interfaces_refs);
 /// }
 /// ```
-pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) {
+pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) -> Result<(), std::io::Error> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::Green)))
-        .unwrap();
-    writeln!(&mut stdout, "Available network interfaces:").unwrap();
+        .set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+    writeln!(&mut stdout, "Available network interfaces:")?;
 
     for (id, interface) in interfaces.iter().enumerate() {
         // Id - first column
@@ -52,7 +51,7 @@ pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) {
             &mut stdout,
             Color::White,
             &format!(
-                " Mac: {mac:<max_mac_length$}",
+                " Mac: [{mac:<max_mac_length$}]",
                 mac = interface.mac.unwrap_or(MacAddr::zero()).to_string(),
                 max_mac_length = max_length(interfaces, |iface| {
                     iface.mac.map_or(0, |mac| mac.to_string().len())
@@ -60,29 +59,35 @@ pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) {
             ),
         );
 
-        let all_v4_ips = interface.ips.iter().filter(|ip| ip.is_ipv4()).count();
         colorize_and_write(
             &mut stdout,
             Color::Magenta,
             &format!(
                 " IPv4: [{ipv4:<max_ipv4_length$}]",
-                ipv4 = all_v4_ips,
-                max_ipv4_length = max_length(interfaces, |iface| {
-                    iface.ips.iter().filter(|ip| ip.is_ipv4()).count()
-                })
+                ipv4 = interface
+                    .ips
+                    .iter()
+                    .filter(|ip| ip.is_ipv4())
+                    .map(|ip| ip.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                max_ipv4_length = max_length(&interfaces, get_max_ipv4_length)
             ),
         );
 
-        let all_v6_ips = interface.ips.iter().filter(|ip| ip.is_ipv6()).count();
         colorize_and_write(
             &mut stdout,
             Color::Yellow,
             &format!(
                 " Ipv6: [{ipv6:<max_ipv6_length$}]",
-                ipv6 = all_v6_ips,
-                max_ipv6_length = max_length(interfaces, |iface| {
-                    iface.ips.iter().filter(|ip| ip.is_ipv6()).count()
-                })
+                ipv6 = interface
+                    .ips
+                    .iter()
+                    .filter(|ip| ip.is_ipv6())
+                    .map(|ip| ip.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                max_ipv6_length = max_length(interfaces, get_max_ipv6_length)
             ),
         );
 
@@ -95,6 +100,7 @@ pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) {
         stdout.reset().unwrap();
         writeln!(&mut stdout).unwrap();
     }
+    Ok(())
 }
 
 ///
@@ -231,4 +237,24 @@ fn get_flags(interface: &NetworkInterface) -> Result<String, String> {
     };
 
     Ok(flags)
+}
+
+fn get_max_ipv4_length(interface: &NetworkInterface) -> usize {
+    interface
+        .ips
+        .iter()
+        .filter(|ip| ip.is_ipv4())
+        .map(|ip| ip.to_string().len())
+        .max()
+        .unwrap_or(0)
+}
+
+fn get_max_ipv6_length(interface: &NetworkInterface) -> usize {
+    interface
+        .ips
+        .iter()
+        .filter(|ip| ip.is_ipv6())
+        .map(|ip| ip.to_string().len())
+        .max()
+        .unwrap_or(0)
 }

@@ -1,8 +1,62 @@
 use crate::tools::{print_formatted_std_error, print_formatted_std_output};
+
 use ipnetwork::Ipv4Network;
+
 use pnet::datalink::NetworkInterface;
+
 use std::io;
+
+use clap::{Arg, ArgAction, Command, value_parser};
+use clap::builder::PossibleValue;
+
 use termcolor::Color;
+
+const CLI_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub fn build_command() -> Command {
+    let command = Command::new("arp-scan")
+        .display_name("arp_scan")
+        .version(CLI_VERSION)
+        .about("A ARP scan tool written in Rust for learning purposes.")
+        .author("Andrew <dr.chrom@gmail.com>")
+        .arg(
+            Arg::new("output").short('o').long("output")
+                .default_value("plain")
+                .value_name("FORMAT")
+                .default_value("plain")
+                .value_parser([
+                    PossibleValue::new("plain").help("Verbose output with table"),
+                    PossibleValue::new("json").help("JSON format"),
+                    PossibleValue::new("yaml").help("YAML format"),
+                    PossibleValue::new("csv").help("CSV format")
+                ])
+                .help("Define output format {plain, json, yaml, csv}")
+        )
+        .arg(
+            Arg::new("profile").short('p').long("profile")
+                .value_name("PROFILE_NAME")
+                .default_value("default")
+                .value_parser([
+                    PossibleValue::new("default").help("Default scan profile"),
+                    PossibleValue::new("fast").help("Fast ARP scans (less accurate)"),
+                    PossibleValue::new("stealth").help("Slower scans (minimize impact)"),
+                    PossibleValue::new("chaos").help("Randomly-selected values")
+                ])
+                .help("Scan profile - a preset of ARP scan options")
+        )
+        .arg(
+            Arg::new("network")
+                .short('n')
+                .long("network")
+                .action(ArgAction::Set)
+                .value_name("NETWORK_RANGE")
+                .value_parser(value_parser!(Ipv4Network))
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
+                .required(true)
+                .help("Provides an input network interface (example: --network 192.168.0.0/24)")
+        );
+    command
+}
 
 /// Retrieves the target IP address from the command-line arguments.
 ///
@@ -26,7 +80,6 @@ use termcolor::Color;
 /// use std::net::Ipv4Network;
 /// use your_crate_name::get_target_ip_from_args;
 ///
-/// fn main() {
 ///     let args: Vec<String> = env::args().collect();
 ///
 ///     match get_target_ip_from_args(args.into_iter()) {
@@ -37,7 +90,6 @@ use termcolor::Color;
 ///             eprintln!("Error: {}", err);
 ///         }
 ///     }
-/// }
 /// ```
 pub fn get_target_ip_from_args(
     mut args: impl Iterator<Item = String>,

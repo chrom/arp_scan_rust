@@ -1,9 +1,10 @@
 mod cli;
 mod net;
 mod tools;
+mod options;
 
 mod view {
-    pub mod row;
+    pub mod plain;
 }
 
 use std::env;
@@ -16,6 +17,8 @@ use pnet::datalink;
 use termcolor::Color;
 
 use tools::{check_supported_os, print_formatted_std_error};
+
+
 
 extern crate interfaces;
 
@@ -30,12 +33,19 @@ fn main() {
 
     check_supported_os().unwrap_or_else(|e| {
         print_formatted_std_error(e, None);
-        process::exit(1)
+        process::exit(exitcode::OSERR);
     });
 
+    let command = cli::build_command().get_matches();
+    let scan_options = options::CliOptions::new(&command).unwrap_or_else(|e| {
+        print_formatted_std_error(e.to_string(), None);
+        process::exit(exitcode::USAGE);
+    });
+
+
     let target_ip = cli::get_target_ip_from_args(env::args()).unwrap_or_else(|e| {
-        print_formatted_std_error(e, None);
-        process::exit(1)
+        print_formatted_std_error(e.to_string(), None);
+        process::exit(exitcode::USAGE);
     });
 
     let binding = datalink::interfaces();
@@ -43,11 +53,20 @@ fn main() {
     // Get list of available network interfaces
     let interfaces = net::get_available_interfaces(&binding);
 
-    view::row::show_list_interfaces(&interfaces);
-
-    let index_interface = cli::prompt_for_interface(&interfaces).unwrap_or_else(|e| {
+    view::plain::show_list_interfaces(&interfaces).unwrap_or_else(|e| {
         print_formatted_std_error(e.to_string(), None);
-        process::exit(1)
+        process::exit(exitcode::UNAVAILABLE);
     });
-    net::arp_scan(interfaces[index_interface], target_ip);
+
+    let selected_interface = cli::prompt_for_interface(&interfaces).unwrap_or_else(|e| {
+        print_formatted_std_error(e.to_string(), None);
+        process::exit(exitcode::USAGE);
+    });
+
+    let _ = net::arp_scan(interfaces[selected_interface], &scan_options).unwrap_or_else(|e| {
+        print_formatted_std_error(e.to_string(), None);
+        process::exit(exitcode::UNAVAILABLE);
+    });
+
+    process::exit(exitcode::OK);
 }

@@ -35,7 +35,6 @@ pub fn check_supported_os() -> Result<(), String> {
     }
 }
 
-
 /// Prints a formatted error message to the standard error stream.
 ///
 /// This function takes an error message as a `String` and an optional `Color`

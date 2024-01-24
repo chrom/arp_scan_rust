@@ -1,16 +1,25 @@
+use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr};
+use std::time::Duration;
 
 use ipnetwork::Ipv4Network;
 
-use pnet::datalink::{Channel, DataLinkReceiver, MacAddr, NetworkInterface};
+use pnet::datalink::{Channel, Config, DataLinkReceiver, MacAddr, NetworkInterface};
 use pnet::packet::arp::{ArpHardwareTypes, ArpOperations, ArpPacket, MutableArpPacket};
 use pnet::packet::ethernet::{EtherTypes, EthernetPacket, MutableEthernetPacket};
 use pnet::packet::{MutablePacket, Packet};
+use crate::options::CliOptions;
+
+pub const DATALINK_RCV_TIMEOUT: u64 = 500;
+
 
 /// Returns a vector of references to available network interfaces.
 ///
 /// This function takes a reference to a vector of `NetworkInterface` instances and
 /// filters out interfaces that are not up, are loopback, or do not have any IPv4 addresses.
+/// ARP (Address Resolution Protocol) is used to map a known IP address to a MAC (Media Access Control) address in IPv4 networks.
+/// For IPv6, the equivalent protocol is NDP (Neighbor Discovery Protocol).
+/// NDP serves the same purpose as ARP but is designed specifically for IPv6.
 /// The remaining interfaces are collected into a new vector and returned.
 ///
 /// # Parameters
@@ -41,7 +50,8 @@ pub fn get_available_interfaces(all_interfaces: &Vec<NetworkInterface>) -> Vec<&
         .collect()
 }
 
-pub fn arp_scan(interface: &NetworkInterface, _target_ip: Ipv4Network) {
+
+fn get_source_ip_from_interface(interface: &NetworkInterface) -> Result<Ipv4Addr, Error> {
     let source_ip = interface
         .ips
         .iter()
@@ -49,18 +59,39 @@ pub fn arp_scan(interface: &NetworkInterface, _target_ip: Ipv4Network) {
         .map(|ip| match ip.ip() {
             IpAddr::V4(ip) => ip,
             _ => unreachable!(),
-        })
-        .unwrap();
+        }).ok_or(std::io::Error::new(std::io::ErrorKind::Other, format!("No IPv4 address found in interface: {}", interface.name)))?;
+    Ok(source_ip)
+}
 
-    let (mut sender, mut receiver) = match pnet::datalink::channel(interface, Default::default()) {
+pub fn arp_scan(interface: &NetworkInterface, _options: &CliOptions) -> std::result::Result<(), std::io::Error> {
+    let source_ip = get_source_ip_from_interface(interface)?;
+    // dbg!(source_ip);
+    // process::exit(0x0100);
+
+
+    let (mut sender, mut receiver) = match pnet::datalink::channel(interface, get_channel_config()) {
         Ok(Channel::Ethernet(tx, rx)) => (tx, rx),
         Ok(_) => panic!("Unknown channel type"),
-        Err(e) => panic!("Error happened {}", e),
+        Err(e) => Err(e)?,
     };
 
-    let ethernet_packet = build_arp_packet(interface, source_ip);
-    sender.send_to(ethernet_packet.packet(), None);
+    sender.send_to(build_arp_packet(interface, source_ip).packet(), None);
+
     receive_arp_responses(&mut receiver, interface);
+
+    Ok(())
+}
+
+
+/// Returns the maximum value of a property of a vector of `NetworkInterface` instances.
+/// This function takes a reference to a vector of `NetworkInterface` instances and a closure
+/// that returns a value of type `T` for each `NetworkInterface` instance. It returns the
+/// maximum value of type `T` from all the values returned by the closure.
+fn get_channel_config() -> Config {
+    Config {
+        read_timeout: Some(Duration::from_millis(DATALINK_RCV_TIMEOUT)),
+        ..Config::default()
+    }
 }
 
 fn receive_arp_responses(receiver: &mut Box<dyn DataLinkReceiver>, interface: &NetworkInterface) {
