@@ -1,5 +1,6 @@
-use pnet::datalink::{MacAddr, NetworkInterface};
 use std::io::Write;
+
+use pnet::datalink::{MacAddr, NetworkInterface};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Displays a formatted list of available network interfaces.
@@ -16,7 +17,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 ///
 /// ```
 /// use pnet::datalink::NetworkInterface;
-/// use your_crate_name::show_list_interfaces;
+/// use plain::show_list_interfaces;
 ///
 /// fn main() {
 ///     let interfaces: Vec<NetworkInterface> = //...; // Obtain your network interfaces.
@@ -26,7 +27,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 ///     show_list_interfaces(&interfaces_refs);
 /// }
 /// ```
-pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) -> Result<(), std::io::Error> {
+pub fn show_list_interfaces(interfaces: &[&NetworkInterface]) -> Result<(), std::io::Error> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     stdout
         .set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
@@ -71,7 +72,7 @@ pub fn show_list_interfaces(interfaces: &Vec<&NetworkInterface>) -> Result<(), s
                     .map(|ip| ip.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
-                max_ipv4_length = max_length(&interfaces, get_max_ipv4_length)
+                max_ipv4_length = max_length(interfaces, get_max_ipv4_length)
             ),
         );
 
@@ -146,7 +147,7 @@ fn colorize_and_write<W: WriteColor>(writer: &mut W, color: Color, content: &str
 /// let max_name_length = max_length(&interfaces, |iface| iface.name.len());
 /// ```
 fn max_length<F: Fn(&NetworkInterface) -> usize>(
-    interfaces: &Vec<&NetworkInterface>,
+    interfaces: &[&NetworkInterface],
     property: F,
 ) -> usize {
     interfaces
@@ -189,7 +190,7 @@ fn get_flags(interface: &NetworkInterface) -> Result<String, String> {
     ];
     let flags = if interface.flags > 0 {
         #[cfg(any(target_os = "linux", target_os = "android"))]
-        let rets = [
+            let rets = [
             interface.is_up(),
             interface.is_broadcast(),
             interface.is_loopback(),
@@ -200,7 +201,7 @@ fn get_flags(interface: &NetworkInterface) -> Result<String, String> {
             interface.is_lower_up(),
         ];
         #[cfg(all(unix, not(any(target_os = "linux", target_os = "android"))))]
-        let rets = [
+            let rets = [
             interface.is_up(),
             interface.is_broadcast(),
             interface.is_loopback(),
@@ -211,7 +212,7 @@ fn get_flags(interface: &NetworkInterface) -> Result<String, String> {
             false,
         ];
         #[cfg(not(unix))]
-        let rets = [
+            let rets = [
             interface.is_up(),
             interface.is_broadcast(),
             interface.is_loopback(),

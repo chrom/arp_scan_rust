@@ -1,13 +1,14 @@
 use std::str::FromStr;
+
 use clap::ArgMatches;
-use ipnetwork::{Ipv4Network};
+use ipnetwork::Ipv4Network;
 
 #[derive(Debug)]
 pub enum OutputFormat {
     Plain,
     Json,
     Yaml,
-    Csv
+    Csv,
 }
 
 #[derive(Debug)]
@@ -15,7 +16,7 @@ pub enum ProfileType {
     Default,
     Fast,
     Stealth,
-    Chaos
+    Chaos,
 }
 
 #[derive(Debug)]
@@ -34,7 +35,7 @@ impl CliOptions {
         Ok(CliOptions {
             profile,
             output,
-            network
+            network,
         })
     }
 
@@ -72,14 +73,13 @@ impl CliOptions {
     }
 
     fn get_network(matches: &ArgMatches)
-        -> Result<Ipv4Network, String>
+                   -> Result<Ipv4Network, String>
     {
         let network = matches.get_one::<String>("network")
             .ok_or("Network not provided")?
             .as_str();
         let result = Ipv4Network::from_str(network)
-            .map_err(|e| format!("Failed to parse IP address: {}", e.to_string()))?;
+            .map_err(|e| format!("Failed to parse IP address: {}", e))?;
         Ok(result)
     }
-
 }

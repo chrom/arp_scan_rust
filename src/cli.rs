@@ -1,20 +1,17 @@
-use crate::tools::{print_formatted_std_error, print_formatted_std_output};
-
-use ipnetwork::Ipv4Network;
-
-use pnet::datalink::NetworkInterface;
-
 use std::io;
 
 use clap::{Arg, ArgAction, Command, value_parser};
 use clap::builder::PossibleValue;
-
+use ipnetwork::Ipv4Network;
+use pnet::datalink::NetworkInterface;
 use termcolor::Color;
+
+use crate::tools::{print_formatted_std_error, print_formatted_std_output};
 
 const CLI_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn build_command() -> Command {
-    let command = Command::new("arp-scan")
+    Command::new("arp-scan")
         .display_name("arp_scan")
         .version(CLI_VERSION)
         .about("A ARP scan tool written in Rust for learning purposes.")
@@ -54,8 +51,7 @@ pub fn build_command() -> Command {
                 .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .required(true)
                 .help("Provides an input network interface (example: --network 192.168.0.0/24)")
-        );
-    command
+        )
 }
 
 /// Retrieves the target IP address from the command-line arguments.
@@ -92,7 +88,7 @@ pub fn build_command() -> Command {
 ///     }
 /// ```
 pub fn get_target_ip_from_args(
-    mut args: impl Iterator<Item = String>,
+    mut args: impl Iterator<Item=String>,
 ) -> Result<Ipv4Network, String> {
     let ip_target = args
         .nth(1)
@@ -167,8 +163,9 @@ pub fn prompt_for_interface(interfaces: &Vec<&NetworkInterface>) -> Result<usize
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::net::Ipv4Addr;
+
+    use super::*;
 
     #[test]
     fn test_get_target_ip_from_args_no_args() {

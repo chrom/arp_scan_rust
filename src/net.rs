@@ -2,12 +2,11 @@ use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
 
-use ipnetwork::Ipv4Network;
-
 use pnet::datalink::{Channel, Config, DataLinkReceiver, MacAddr, NetworkInterface};
-use pnet::packet::arp::{ArpHardwareTypes, ArpOperations, ArpPacket, MutableArpPacket};
-use pnet::packet::ethernet::{EtherTypes, EthernetPacket, MutableEthernetPacket};
 use pnet::packet::{MutablePacket, Packet};
+use pnet::packet::arp::{ArpHardwareTypes, ArpOperations, ArpPacket, MutableArpPacket};
+use pnet::packet::ethernet::{EthernetPacket, EtherTypes, MutableEthernetPacket};
+
 use crate::options::CliOptions;
 
 pub const DATALINK_RCV_TIMEOUT: u64 = 500;
